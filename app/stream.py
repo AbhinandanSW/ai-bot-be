@@ -25,7 +25,7 @@ class StreamingService:
 
             # Save user message
             await save_message(
-                request.thread_id,
+                f"req_{request.thread_id}",
                 request.session_id,
                 MessageRole.USER,
                 request.message,

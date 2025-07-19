@@ -61,4 +61,4 @@ class RateLimiter:
 
 
 # Global rate limiter instance
-rate_limiter = RateLimiter()
+# rate_limiter = RateLimiter()

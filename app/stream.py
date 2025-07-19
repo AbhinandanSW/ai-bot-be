@@ -14,7 +14,9 @@ class StreamingService:
     """Handle Server-Sent Events streaming for chat responses"""
 
     @staticmethod
-    async def stream_chat_response(request: ChatRequest) -> AsyncGenerator[str, None]:
+    async def stream_chat_response(
+        request: ChatRequest, user_id: str
+    ) -> AsyncGenerator[str, None]:
         """Stream chat response using Server-Sent Events format"""
 
         try:
@@ -23,7 +25,11 @@ class StreamingService:
 
             # Save user message
             await save_message(
-                request.thread_id, request.session_id, MessageRole.USER, request.message
+                request.thread_id,
+                request.session_id,
+                MessageRole.USER,
+                request.message,
+                user_id,
             )
 
             # Stream response from Gemini
@@ -51,6 +57,7 @@ class StreamingService:
                             request.session_id,
                             MessageRole.ASSISTANT,
                             full_response,
+                            user_id,
                         )
                     break
 
@@ -74,11 +81,13 @@ class StreamingService:
             yield f"data: {error_chunk.model_dump_json()}\n\n"
 
     @staticmethod
-    def create_streaming_response(request: ChatRequest) -> StreamingResponse:
+    def create_streaming_response(
+        request: ChatRequest, user_id: str
+    ) -> StreamingResponse:
         """Create a FastAPI StreamingResponse for chat"""
 
         return StreamingResponse(
-            StreamingService.stream_chat_response(request),
+            StreamingService.stream_chat_response(request, user_id),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",

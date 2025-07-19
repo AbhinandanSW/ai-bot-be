@@ -31,7 +31,7 @@ def get_supabase_client() -> Client:
 
 
 async def save_message(
-    thread_id: str, session_id: str, role: MessageRole, content: str
+    thread_id: str, session_id: str, role: MessageRole, content: str, user_id: str
 ) -> bool:
     """Save a message to the database"""
     try:
@@ -48,7 +48,7 @@ async def save_message(
         result = client.table("messages").insert(data).execute()
 
         # Update thread metadata
-        await update_thread_metadata(thread_id, session_id)
+        await update_thread_metadata(thread_id, session_id, user_id)
 
         return True
 
@@ -57,7 +57,7 @@ async def save_message(
         return False
 
 
-async def update_thread_metadata(thread_id: str, session_id: str):
+async def update_thread_metadata(thread_id: str, session_id: str, user_id: str):
     """Update thread metadata (last activity, message count)"""
     try:
         client = get_supabase_client()
@@ -75,6 +75,7 @@ async def update_thread_metadata(thread_id: str, session_id: str):
         # Upsert thread metadata
         thread_data = {
             "thread_id": thread_id,
+            "user_id": user_id,
             "session_id": session_id,
             "message_count": message_count,
             "last_activity": datetime.utcnow().isoformat(),

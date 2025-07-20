@@ -24,7 +24,7 @@ class StreamingService:
             history = await get_conversation_history(request.thread_id)
 
             if not request.thread_id.startswith("req"):
-                thread_id = f"req_{thread_id}"
+                thread_id = f"req_{request.thread_id}"
             # Save user message
             await save_message(
                 thread_id,

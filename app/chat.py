@@ -26,8 +26,8 @@ async def stream_chat(
     user_id = current_user.get("id")
 
     # Ensure user owns the session
-    # if not request.session_id.startswith(user_id):
-    #     request.session_id = f"{user_id}_{request.session_id}"
+    if not request.session_id.startswith(user_id):
+        request.session_id = f"{user_id}_{request.session_id}"
 
     # # Ensure user owns the thread
     # if not request.thread_id.startswith(user_id):
@@ -50,8 +50,8 @@ async def get_chat_history(
     user_id = current_user.get("id")
 
     # Ensure user owns the thread
-    if not thread_id.startswith(user_id):
-        thread_id = f"{user_id}_{thread_id}"
+    if not thread_id.startswith("req"):
+        thread_id = f"req_{thread_id}"
 
     try:
         messages = await get_conversation_history(thread_id, limit)
@@ -84,13 +84,11 @@ async def get_user_threads(current_user: Dict[str, Any] = Depends(get_current_us
 
     try:
         # Get threads that belong to this user
-        all_threads = await get_session_threads(session_id_prefix)
+        all_threads = await get_session_threads(user_id)
 
         # Filter threads that belong to the user
         user_threads = [
-            thread
-            for thread in all_threads
-            if thread.get("session_id", "").startswith(session_id_prefix)
+            thread for thread in all_threads if thread.get("session_id", "")
         ]
 
         return {
@@ -112,11 +110,11 @@ async def delete_thread_endpoint(
     """Delete a thread and all its messages - PROTECTED ROUTE"""
 
     user_id = current_user.get("id")
-    session_id = f"{user_id}_default"  # or derive from thread
+    # session_id = f"{user_id}_default"  # or derive from thread
 
     # Ensure user owns the thread
-    if not thread_id.startswith(user_id):
-        thread_id = f"{user_id}_{thread_id}"
+    if not thread_id.startswith("req"):
+        thread_id = f"req_{thread_id}"
 
     try:
         success = await delete_thread(thread_id, session_id)

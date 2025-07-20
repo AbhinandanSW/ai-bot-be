@@ -40,6 +40,7 @@ async def save_message(
         data = {
             "thread_id": thread_id,
             "session_id": session_id,
+            "user_id": user_id,
             "role": role.value,
             "content": content,
             "created_at": datetime.utcnow().isoformat(),
@@ -102,6 +103,15 @@ async def get_conversation_history(
             .limit(limit)
             .execute()
         )
+        thread_id_assistant = thread_id.replace("req_", "")
+        assitant_result = (
+            client.table("messages")
+            .select("*")
+            .eq("thread_id", thread_id_assistant)
+            .order("created_at", desc=False)
+            .limit(limit)
+            .execute()
+        )
 
         messages = []
         for row in result.data:
@@ -114,7 +124,18 @@ async def get_conversation_history(
                     ),
                 )
             )
+        for row in assitant_result.data:
+            messages.append(
+                ChatMessage(
+                    role=MessageRole(row["role"]),
+                    content=row["content"],
+                    timestamp=datetime.fromisoformat(
+                        row["created_at"].replace("Z", "+00:00")
+                    ),
+                )
+            )
 
+        messages.sort(key=lambda msg: msg.timestamp)
         return messages
 
     except Exception as e:
@@ -122,20 +143,36 @@ async def get_conversation_history(
         return []
 
 
-async def get_session_threads(session_id: str) -> List[dict]:
+async def get_session_threads(user_id: str) -> List[dict]:
     """Get all threads for a session"""
     try:
         client = get_supabase_client()
-
         result = (
             client.table("threads")
             .select("*")
-            .eq("session_id", session_id)
+            .eq("user_id", user_id)
             .order("last_activity", desc=True)
             .execute()
         )
+        print(result.data)
+        result_messages = (
+            client.table("messages").select("*").eq("user_id", user_id).execute()
+        )
+        print("samp")
 
-        return result.data
+        updated_thread = []
+        for thread in result.data:
+            for message in result_messages.data:
+                if thread["thread_id"] == message["thread_id"]:
+                    # thread["message_count"] = message["message_count"]
+                    # max content 50words in title
+                    thread["title"] = " ".join(message["content"].split()[:10])
+                    if message["role"] == "user":
+                        updated_thread.append(thread)
+
+                    break
+        print(result_messages.data)
+        return updated_thread
 
     except Exception as e:
         logger.error(f"Error getting session threads: {e}")
